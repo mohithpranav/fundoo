@@ -1,13 +1,16 @@
 import "dotenv/config";
 import mongoose from "mongoose";
-import express from "express";
-import router from "./routes/userRoutes.js";
+import app from "./app.js";
 
-const app = express();
-mongoose.connect(process.env.MONGODB_URI);
-
-app.use(express.json());
-app.use("/", router);
+const connect = async () => {
+  try {
+    await mongoose.connect(process.env.MONGODB_URI);
+    console.log("Connected to MongoDB");
+  } catch (error) {
+    console.error("Error connecting to MongoDB:", error);
+  }
+};
+connect();
 
 app.listen(3000, () => {
   console.log("Server is running on port 3000");
