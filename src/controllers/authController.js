@@ -1,18 +1,18 @@
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
-import user from "../models/user.Model.js";
+import User from "../models/user.Model.js";
 import asyncHandler from "../utils/async-handler.js";
 
 const signup = asyncHandler(async (req, res) => {
   const { username, email, password } = req.body;
-  const existingUser = await user.findOne({ email: email });
+  const existingUser = await User.findOne({ email: email });
   if (existingUser) {
     return res.status(400).json({ message: "User already exists" });
   }
 
   const hashedPassword = await bcrypt.hash(password, 10);
 
-  const newUser = await user.create({
+  const newUser = await User.create({
     username,
     email,
     password: hashedPassword,
@@ -22,7 +22,7 @@ const signup = asyncHandler(async (req, res) => {
 
 const signin = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
-  const existingUser = await user.findOne({ email: email });
+  const existingUser = await User.findOne({ email: email });
 
   if (!existingUser) {
     return res.status(400).json({ message: "User not found" });
@@ -47,7 +47,7 @@ const signin = asyncHandler(async (req, res) => {
 
 const userProfile = asyncHandler(async (req, res) => {
   const userId = req.user.id;
-  const userProfile = await user.findById(userId).select("-password");
+  const userProfile = await User.findById(userId).select("-password");
   res.status(200).json(userProfile);
 });
 

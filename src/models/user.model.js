@@ -8,4 +8,4 @@ const UserSchema = new Schema({
   name: String,
 });
 
-export default mongoose.model("users", UserSchema);
+export default mongoose.model("Users", UserSchema);
