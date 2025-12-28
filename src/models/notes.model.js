@@ -17,9 +17,13 @@ const NotesSchema = new Schema({
   labels: [
     {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Label",
+      ref: "labels",
     },
   ],
+
+  isArchived: { type: Boolean, default: false },
+  isTrashed: { type: Boolean, default: false },
+  isPinned: { type: Boolean, default: false },
 });
 
 export default mongoose.model("notes", NotesSchema);
