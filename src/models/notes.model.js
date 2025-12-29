@@ -9,7 +9,7 @@ const NotesSchema = new Schema({
 
   userId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "User",
+    ref: "Users",
     required: true,
     index: true,
   },
@@ -18,6 +18,13 @@ const NotesSchema = new Schema({
     {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Labels",
+    },
+  ],
+
+  collaborators: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Users",
     },
   ],
 

@@ -40,7 +40,7 @@ const signin = asyncHandler(async (req, res) => {
       id: existingUser._id,
     },
     process.env.JWT_SECRET,
-    { expiresIn: "1h" }
+    { expiresIn: "5h" }
   );
   res.status(200).json({ token });
 });

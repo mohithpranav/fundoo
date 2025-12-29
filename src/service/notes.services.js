@@ -3,6 +3,8 @@ import Notes from "../models/notes.model.js";
 import Labels from "../models/label.model.js";
 import handleLabels from "../utils/handlaLabels.js";
 import cacheService from "../utils/cache.js";
+import { publishEmailNotification } from "../utils/rabbitmq.js";
+import User from "../models/user.Model.js";
 import chaiHttp from "chai-http";
 
 /**
@@ -44,7 +46,6 @@ const getNotes = asyncHandler(async (req, res) => {
   const userId = req.user.id;
   const cacheKey = `notes:${userId}:all`;
 
-  // Try to get from cache
   let notes = await cacheService.get(cacheKey);
 
   if (!notes) {
@@ -214,7 +215,6 @@ const archiveNote = asyncHandler(async (req, res) => {
   note.updatedAt = Date.now();
   await note.save();
 
-  // Invalidate cache
   await invalidateUserNotesCache(userId);
 
   res.status(200).json({
@@ -241,7 +241,6 @@ const trashNote = asyncHandler(async (req, res) => {
   note.updatedAt = Date.now();
   await note.save();
 
-  // Invalidate cache
   await invalidateUserNotesCache(userId);
 
   res.status(200).json({
@@ -268,7 +267,6 @@ const pinNote = asyncHandler(async (req, res) => {
   note.updatedAt = Date.now();
   await note.save();
 
-  // Invalidate cache
   await invalidateUserNotesCache(userId);
 
   res.status(200).json({
@@ -291,7 +289,6 @@ const deleteNote = asyncHandler(async (req, res) => {
     return res.status(404).json({ message: "Note not found" });
   }
 
-  // Invalidate cache
   await invalidateUserNotesCache(userId);
 
   res.status(200).json({ message: "Note deleted successfully" });
@@ -311,12 +308,10 @@ const searchNotes = asyncHandler(async (req, res) => {
     });
   }
 
-  // Create cache key based on search parameters
   const titleKey = title ? title.toLowerCase().trim() : "";
   const labelKey = label ? label.toLowerCase().trim() : "";
   const cacheKey = `notes:${userId}:search:${titleKey}:${labelKey}`;
 
-  // Try to get from cache
   let result = await cacheService.get(cacheKey);
 
   if (!result) {
@@ -374,6 +369,59 @@ const searchNotes = asyncHandler(async (req, res) => {
   res.status(200).json(result);
 });
 
+// Add collaborator to a note
+const addCollaborator = asyncHandler(async (req, res) => {
+  const noteId = req.params.id;
+  const userId = req.user.id;
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({ message: "Collaborator email is required" });
+  }
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    return res.status(400).json({ message: "Invalid email format" });
+  }
+
+  const note = await Notes.findOne({ _id: noteId, userId: userId });
+  if (!note) {
+    return res
+      .status(404)
+      .json({ message: "Note not found or you don't have permission" });
+  }
+
+  // Get owner details for email
+  const owner = await User.findById(userId).select("username email");
+  console.log(owner);
+
+  if (email.toLowerCase() === owner.email.toLowerCase()) {
+    return res
+      .status(400)
+      .json({ message: "You cannot add yourself as a collaborator" });
+  }
+
+  // Send email notification via RabbitMQ
+  await publishEmailNotification({
+    to: email,
+    subject: `You've been invited to collaborate on "${note.title}"`,
+    body: `${owner.username} (${owner.email}) has invited you to collaborate on a note titled "${note.title}".\n\nNote: "${note.title}"\nNote ID: ${note._id}\n\nTo access this note, please sign up at FundooNotes if you haven't already.\n\nBest regards,\nFundooNotes Team`,
+    noteId: note._id.toString(),
+    sharedBy: owner.email,
+  });
+
+  await invalidateUserNotesCache(userId);
+
+  res.status(200).json({
+    message: `Collaboration invitation sent to ${email}`,
+    note: {
+      _id: note._id,
+      title: note.title,
+      invitedEmail: email,
+    },
+  });
+});
+
 export {
   addNote,
   getNotes,
@@ -387,4 +435,5 @@ export {
   pinNote,
   deleteNote,
   searchNotes,
+  addCollaborator,
 };

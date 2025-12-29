@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "nodemon src/server.js",
+    "worker": "node src/workers/emailWorker.js",
     "test": "mocha",
     "test:auth": "mocha test/auth.test.js",
     "test:notes": "mocha test/notes.test.js",
@@ -17,12 +18,14 @@
   "license": "ISC",
   "type": "module",
   "dependencies": {
+    "amqplib": "^0.10.5",
     "bcrypt": "^6.0.0",
     "dotenv": "^17.2.3",
     "express": "^5.2.1",
     "ioredis": "^5.8.2",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.0.2",
+    "nodemailer": "^6.9.7",
     "nodemon": "^3.1.11"
   },
   "devDependencies": {

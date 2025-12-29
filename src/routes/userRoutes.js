@@ -15,6 +15,7 @@ import {
   pinNote,
   deleteNote,
   searchNotes,
+  addCollaborator,
 } from "../service/notes.services.js";
 
 const router = Router();
@@ -38,6 +39,7 @@ router.put("/updateNotes/:id", authMiddleware, updateNotes);
 router.put("/notes/:id/archive", authMiddleware, archiveNote);
 router.put("/notes/:id/trash", authMiddleware, trashNote);
 router.put("/notes/:id/pin", authMiddleware, pinNote);
+router.post("/notes/:id/collaborators", authMiddleware, addCollaborator);
 router.delete("/deleteNote/:id", authMiddleware, deleteNote);
 
 export default router;
