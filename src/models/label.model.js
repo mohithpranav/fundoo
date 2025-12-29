@@ -16,4 +16,4 @@ const LabelSchema = new Schema({
 // This ensures label names are unique per user, not globally
 LabelSchema.index({ name: 1, userId: 1 }, { unique: true });
 
-export default mongoose.model("labels", LabelSchema);
+export default mongoose.model("Labels", LabelSchema);

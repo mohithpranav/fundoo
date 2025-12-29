@@ -1,7 +1,9 @@
 import asyncHandler from "../utils/async-handler.js";
 import Notes from "../models/notes.model.js";
+import Labels from "../models/label.model.js";
 import handleLabels from "../utils/handlaLabels.js";
 import cacheService from "../utils/cache.js";
+import chaiHttp from "chai-http";
 
 /**
  * Helper function to invalidate user's notes cache
@@ -295,6 +297,83 @@ const deleteNote = asyncHandler(async (req, res) => {
   res.status(200).json({ message: "Note deleted successfully" });
 });
 
+/**
+ * Search notes by title and/or label with caching
+ * Query params: title (string), label (string - label name)
+ */
+const searchNotes = asyncHandler(async (req, res) => {
+  const userId = req.user.id;
+  const { title, label } = req.query;
+
+  if (!title && !label) {
+    return res.status(400).json({
+      message: "Please provide at least one search parameter (title or label)",
+    });
+  }
+
+  // Create cache key based on search parameters
+  const titleKey = title ? title.toLowerCase().trim() : "";
+  const labelKey = label ? label.toLowerCase().trim() : "";
+  const cacheKey = `notes:${userId}:search:${titleKey}:${labelKey}`;
+
+  // Try to get from cache
+  let result = await cacheService.get(cacheKey);
+
+  if (!result) {
+    // Build search query
+    const searchQuery = {
+      userId: userId,
+      isTrashed: false, // Exclude trashed notes from search
+    };
+
+    // Add title search with case-insensitive regex
+    if (title) {
+      searchQuery.title = { $regex: title, $options: "i" };
+    }
+
+    let notes;
+
+    // If searching by label name, we need to find the label first
+    if (label) {
+      // Find label by name for this user
+      const labelDoc = await Labels.findOne({
+        name: label.trim().toLowerCase(),
+        userId: userId,
+      });
+
+      if (labelDoc) {
+        // Add label filter to search query
+        searchQuery.labels = labelDoc._id;
+
+        // Search notes with both title and label filters
+        notes = await Notes.find(searchQuery)
+          .populate("labels")
+          .sort({ isPinned: -1, updatedAt: -1 })
+          .limit(50);
+      } else {
+        // Label not found, return empty array
+        notes = [];
+      }
+    } else {
+      // Search by title only
+      notes = await Notes.find(searchQuery)
+        .populate("labels")
+        .sort({ isPinned: -1, updatedAt: -1 })
+        .limit(50);
+    }
+
+    result = {
+      count: notes.length,
+      notes: notes,
+    };
+
+    // Cache search results for 30 minutes
+    await cacheService.set(cacheKey, result, 1800);
+  }
+
+  res.status(200).json(result);
+});
+
 export {
   addNote,
   getNotes,
@@ -307,4 +386,5 @@ export {
   trashNote,
   pinNote,
   deleteNote,
+  searchNotes,
 };

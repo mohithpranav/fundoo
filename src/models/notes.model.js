@@ -17,7 +17,7 @@ const NotesSchema = new Schema({
   labels: [
     {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "labels",
+      ref: "Labels",
     },
   ],
 
@@ -26,4 +26,4 @@ const NotesSchema = new Schema({
   isPinned: { type: Boolean, default: false },
 });
 
-export default mongoose.model("notes", NotesSchema);
+export default mongoose.model("Notes", NotesSchema);

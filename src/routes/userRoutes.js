@@ -14,6 +14,7 @@ import {
   trashNote,
   pinNote,
   deleteNote,
+  searchNotes,
 } from "../service/notes.services.js";
 
 const router = Router();
@@ -27,10 +28,12 @@ router.put("/resetPassword", authMiddleware, resetPassword);
 // routes for notes
 router.post("/addNotes", authMiddleware, addNote);
 router.get("/getNotes", authMiddleware, getNotes);
+router.get("/notes/search", authMiddleware, searchNotes);
 router.get("/notes/archived", authMiddleware, getArchivedNotes);
 router.get("/notes/trashed", authMiddleware, getTrashedNotes);
 router.get("/notes/pinned", authMiddleware, getPinnedNotes);
 router.get("/notes/label/:labelId", authMiddleware, getNotesByLabel);
+
 router.put("/updateNotes/:id", authMiddleware, updateNotes);
 router.put("/notes/:id/archive", authMiddleware, archiveNote);
 router.put("/notes/:id/trash", authMiddleware, trashNote);
