@@ -1,10 +1,10 @@
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
-import User from "../models/user.Model.js";
+import User from "../models/user.model.js";
 import asyncHandler from "../utils/async-handler.js";
 
 const signup = asyncHandler(async (req, res) => {
-  const { username, email, password } = req.body;
+  const { username, email, password, name } = req.body;
   const existingUser = await User.findOne({ email: email });
   if (existingUser) {
     return res.status(400).json({ message: "User already exists" });
@@ -16,6 +16,7 @@ const signup = asyncHandler(async (req, res) => {
     username,
     email,
     password: hashedPassword,
+    name,
   });
   res.status(201).json({ message: "User registered successfully", newUser });
 });

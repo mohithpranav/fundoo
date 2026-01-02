@@ -4,7 +4,7 @@ import Labels from "../models/label.model.js";
 import handleLabels from "../utils/handlaLabels.js";
 import cacheService from "../utils/cache.js";
 import { publishEmailNotification } from "../utils/rabbitmq.js";
-import User from "../models/user.Model.js";
+import User from "../models/user.model.js";
 import chaiHttp from "chai-http";
 
 /**
