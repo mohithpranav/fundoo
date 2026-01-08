@@ -33,6 +33,9 @@ const addNote = asyncHandler(async (req, res) => {
     isTrashed: false,
   });
 
+  // Populate labels before returning
+  await newNote.populate("labels");
+
   // Invalidate cache
   await invalidateUserNotesCache(userId);
 
@@ -193,6 +196,9 @@ const updateNotes = asyncHandler(async (req, res) => {
   note.updatedAt = Date.now();
   await note.save();
 
+  // Populate labels before returning
+  await note.populate("labels");
+
   // Invalidate cache
   await invalidateUserNotesCache(userId);
 
@@ -295,67 +301,48 @@ const deleteNote = asyncHandler(async (req, res) => {
 });
 
 /**
- * Search notes by title and/or label with caching
- * Query params: title (string), label (string - label name)
+ * Search notes by title, content, or label with caching
+ * Query params: q (string - search query)
  */
 const searchNotes = asyncHandler(async (req, res) => {
   const userId = req.user.id;
-  const { title, label } = req.query;
+  const { q } = req.query;
 
-  if (!title && !label) {
+  if (!q || !q.trim()) {
     return res.status(400).json({
-      message: "Please provide at least one search parameter (title or label)",
+      message: "Please provide a search query",
     });
   }
 
-  const titleKey = title ? title.toLowerCase().trim() : "";
-  const labelKey = label ? label.toLowerCase().trim() : "";
-  const cacheKey = `notes:${userId}:search:${titleKey}:${labelKey}`;
+  const searchTerm = q.trim();
+  const cacheKey = `notes:${userId}:search:${searchTerm.toLowerCase()}`;
 
   let result = await cacheService.get(cacheKey);
 
   if (!result) {
-    // Build search query
+    // Search for labels matching the search term
+    const matchingLabels = await Labels.find({
+      name: { $regex: searchTerm, $options: "i" },
+      userId: userId,
+    });
+
+    const labelIds = matchingLabels.map((label) => label._id);
+
+    // Build search query - search in title, content, or labels
     const searchQuery = {
       userId: userId,
-      isTrashed: false, // Exclude trashed notes from search
+      isTrashed: false,
+      $or: [
+        { title: { $regex: searchTerm, $options: "i" } },
+        { content: { $regex: searchTerm, $options: "i" } },
+        ...(labelIds.length > 0 ? [{ labels: { $in: labelIds } }] : []),
+      ],
     };
 
-    // Add title search with case-insensitive regex
-    if (title) {
-      searchQuery.title = { $regex: title, $options: "i" };
-    }
-
-    let notes;
-
-    // If searching by label name, we need to find the label first
-    if (label) {
-      // Find label by name for this user
-      const labelDoc = await Labels.findOne({
-        name: label.trim().toLowerCase(),
-        userId: userId,
-      });
-
-      if (labelDoc) {
-        // Add label filter to search query
-        searchQuery.labels = labelDoc._id;
-
-        // Search notes with both title and label filters
-        notes = await Notes.find(searchQuery)
-          .populate("labels")
-          .sort({ isPinned: -1, updatedAt: -1 })
-          .limit(50);
-      } else {
-        // Label not found, return empty array
-        notes = [];
-      }
-    } else {
-      // Search by title only
-      notes = await Notes.find(searchQuery)
-        .populate("labels")
-        .sort({ isPinned: -1, updatedAt: -1 })
-        .limit(50);
-    }
+    const notes = await Notes.find(searchQuery)
+      .populate("labels")
+      .sort({ isPinned: -1, updatedAt: -1 })
+      .limit(50);
 
     result = {
       count: notes.length,

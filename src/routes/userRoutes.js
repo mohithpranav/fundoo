@@ -17,6 +17,12 @@ import {
   searchNotes,
   addCollaborator,
 } from "../service/notes.services.js";
+import {
+  createLabel,
+  getAllLabels,
+  updateLabel,
+  deleteLabel,
+} from "../controllers/labelController.js";
 
 const router = Router();
 
@@ -41,5 +47,11 @@ router.put("/notes/:id/trash", authMiddleware, trashNote);
 router.put("/notes/:id/pin", authMiddleware, pinNote);
 router.post("/notes/:id/collaborators", authMiddleware, addCollaborator);
 router.delete("/deleteNote/:id", authMiddleware, deleteNote);
+
+// routes for labels
+router.post("/labels", authMiddleware, createLabel);
+router.get("/labels", authMiddleware, getAllLabels);
+router.put("/labels/:id", authMiddleware, updateLabel);
+router.delete("/labels/:id", authMiddleware, deleteLabel);
 
 export default router;
