@@ -11,7 +11,8 @@
     "test:notes": "mocha test/notes.test.js",
     "test:labels": "mocha test/labels.test.js",
     "test:reset": "mocha test/resetPassword.test.js",
-    "test:watch": "mocha --watch"
+    "test:watch": "mocha --watch",
+    "start": "node src/server.js"
   },
   "keywords": [],
   "author": "",
